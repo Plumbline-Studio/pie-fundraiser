@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -8,15 +8,13 @@ import { FEEL } from "@/engine/config";
 import { POSE_SETS, POSE_ASPECT, PoseName, VariantName, ANIMS } from "@/engine/characterAsset";
 
 // Full-body 2.5D character: pose textures + reaction timelines + a Veo-derived
-// flipbook idle loop (real breathing/blinking/weight-shift), ~150ms crossfade
-// between poses, and procedural recoil layered on top.
+// 24fps flipbook idle with inter-frame blending (reads ~48fps), ~150ms
+// crossfade between poses, and procedural recoil layered on top.
+// Splat decals removed by design — impact feedback is the burst + reaction.
 
 const PLANE_H = 2.55;
 const PLANE_W = PLANE_H * POSE_ASPECT;
 const CROSSFADE = 0.15; // seconds
-const SPLAT_HOLD = 6000; // ms at full opacity
-const SPLAT_FADE = 3000; // ms fading out
-const SPLAT_MAX_AGE = SPLAT_HOLD + SPLAT_FADE + 200;
 
 // reaction timelines: sequence of [pose, seconds]
 const TIMELINES: Record<"hitFace" | "hitBody" | "miss", [PoseName, number][]> = {
@@ -31,37 +29,14 @@ const TIMELINES: Record<"hitFace" | "hitBody" | "miss", [PoseName, number][]> = 
   miss: [["smug", 1.3]],
 };
 
-function makeSplatTexture(): THREE.CanvasTexture | null {
-  if (typeof document === "undefined") return null;
-  const c = document.createElement("canvas");
-  c.width = c.height = 128;
-  const g = c.getContext("2d")!;
-  g.translate(64, 64);
-  g.fillStyle = "#fdf6e3";
-  g.beginPath();
-  const lobes = 9;
-  for (let i = 0; i <= lobes * 8; i++) {
-    const a = (i / (lobes * 8)) * Math.PI * 2;
-    const r = 40 + Math.sin(a * lobes) * 12 + Math.random() * 4;
-    if (i === 0) g.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-    else g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-  }
-  g.closePath();
-  g.fill();
-  const tex = new THREE.CanvasTexture(c);
-  tex.anisotropy = 4;
-  return tex;
-}
-
 export default function BillboardCharacter({ variant = "stylized" }: { variant?: VariantName }) {
   const root = useRef<THREE.Group>(null!);
   const plane = useRef<THREE.Group>(null!);
   const matCur = useRef<THREE.MeshStandardMaterial>(null!);
   const matPrev = useRef<THREE.MeshStandardMaterial>(null!);
-  const splatMats = useRef(new Map<number, THREE.SpriteMaterial>());
+  const matBlend = useRef<THREE.MeshStandardMaterial>(null!);
+  const blendMesh = useRef<THREE.Mesh>(null!);
   const reaction = useGame((s) => s.reaction);
-  const splats = useGame((s) => s.splats);
-  const pruneSplats = useGame((s) => s.pruneSplats);
   const anim = useRef({ seq: -1, t0: 0 });
   const fade = useRef({ t0: -10 });
   const [pose, setPose] = useState<PoseName>("idle");
@@ -79,7 +54,6 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
     });
     return out;
   }, [variant]);
-  const splatTex = useMemo(makeSplatTexture, []);
 
   // flipbook idle animation (Veo-derived frames), when available for this variant
   const idleAnim = ANIMS[variant]?.idle;
@@ -99,12 +73,6 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
     return { frames, state };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant]);
-
-  // sweep expired splat decals out of the store
-  useEffect(() => {
-    const iv = setInterval(() => pruneSplats(SPLAT_MAX_AGE), 1500);
-    return () => clearInterval(iv);
-  }, [pruneSplats]);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -143,28 +111,28 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
     if (matPrev.current) matPrev.current.opacity = 1 - f;
     if (f >= 1 && prevPose) setPrevPose(null);
 
-    // --- flipbook: real motion while idle ---
+    // --- flipbook with inter-frame blending: real motion while idle ---
+    const flipActive = pose === "idle" && !!idleAnim && !!idleFlip && idleFlip.state.ready;
     if (matCur.current) {
-      if (pose === "idle" && idleAnim && idleFlip && idleFlip.state.ready) {
-        const fi = Math.floor(t * idleAnim.fps) % idleAnim.count;
-        matCur.current.map = idleFlip.frames[fi];
-      } else if (matCur.current.map !== textures[pose]) {
-        matCur.current.map = textures[pose];
+      if (flipActive && idleAnim && idleFlip) {
+        const fpos = (t * idleAnim.fps) % idleAnim.count;
+        const i0 = Math.floor(fpos);
+        const i1 = (i0 + 1) % idleAnim.count;
+        const frac = fpos - i0;
+        matCur.current.map = idleFlip.frames[i0];
+        if (matBlend.current && blendMesh.current) {
+          blendMesh.current.visible = true;
+          matBlend.current.map = idleFlip.frames[i1];
+          matBlend.current.opacity = frac * f;
+        }
+      } else {
+        if (blendMesh.current) blendMesh.current.visible = false;
+        if (matCur.current.map !== textures[pose]) matCur.current.map = textures[pose];
       }
     }
 
-    // --- splat decal fade-out ---
-    const now = Date.now();
-    splatMats.current.forEach((mat, id) => {
-      const rec = splats.find((s) => s.id === id);
-      if (!rec) return;
-      const age = now - rec.born;
-      mat.opacity = age < SPLAT_HOLD ? 0.9 : 0.9 * Math.max(0, 1 - (age - SPLAT_HOLD) / SPLAT_FADE);
-    });
-
-    // --- procedural life on top of the pose swap ---
+    // --- procedural life layered on top ---
     root.current.rotation.y = Math.sin(t * 0.6) * 0.04;
-    const flipActive = pose === "idle" && idleAnim && idleFlip && idleFlip.state.ready;
     if (!flipActive) {
       plane.current.scale.y = 1 + Math.sin(t * 2.1) * 0.006;
       plane.current.scale.x = 1 - Math.sin(t * 2.1) * 0.003;
@@ -208,6 +176,7 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
             />
           </mesh>
         )}
+        {/* current frame */}
         <mesh>
           <planeGeometry args={[PLANE_W, PLANE_H]} />
           <meshStandardMaterial
@@ -219,29 +188,17 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
             side={THREE.DoubleSide}
           />
         </mesh>
-        {/* splat decals ride the plane; opacity animated in useFrame */}
-        {splatTex &&
-          splats.map((s) => {
-            const y =
-              s.zone === "face"
-                ? THREE.MathUtils.clamp(FEEL.headCenter[1] + s.pos[1] * 0.15, 1.8, 2.45) - PLANE_H / 2
-                : THREE.MathUtils.clamp(s.pos[1], 0.5, 1.6) - PLANE_H / 2;
-            const x = THREE.MathUtils.clamp(s.pos[0] * 0.4, -PLANE_W / 2 + 0.15, PLANE_W / 2 - 0.15);
-            return (
-              <sprite key={s.id} position={[x, y, 0.06]} scale={[s.size * 0.7, s.size * 0.7, 1]}>
-                <spriteMaterial
-                  ref={(m) => {
-                    if (m) splatMats.current.set(s.id, m);
-                    else splatMats.current.delete(s.id);
-                  }}
-                  map={splatTex}
-                  rotation={s.rot}
-                  depthWrite={false}
-                  opacity={0.9}
-                />
-              </sprite>
-            );
-          })}
+        {/* next frame, fractionally blended on top (perceived ~2x frame rate) */}
+        <mesh ref={blendMesh} position={[0, 0, 0.002]} visible={false}>
+          <planeGeometry args={[PLANE_W, PLANE_H]} />
+          <meshStandardMaterial
+            ref={matBlend}
+            transparent
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
       </group>
       {/* soft contact shadow at her feet */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
