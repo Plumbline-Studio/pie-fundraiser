@@ -1,7 +1,6 @@
 "use client";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-import Character from "./Character";
 import BillboardCharacter from "./BillboardCharacter";
 import PieManager from "./PieManager";
 import { useGame } from "@/engine/store";
@@ -50,7 +49,7 @@ export default function GameCanvas() {
         <planeGeometry args={[44, 9]} />
         <meshStandardMaterial color="#C8102E" />
       </mesh>
-      {style === "stylized" ? <BillboardCharacter /> : <Character />}
+      <BillboardCharacter key={style} variant={style} />
       <PieManager />
     </Canvas>
   );
