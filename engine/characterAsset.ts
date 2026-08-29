@@ -24,7 +24,7 @@ export const POSE_SETS: Record<VariantName, Record<PoseName, string>> = {
 
 export const POSE_ASPECT = 384 / 768; // canvas w/h — feet sit on the bottom edge
 
-// Flipbook animations (Veo-generated, frame-extracted at 12fps, matted, aligned).
+// Flipbook animations (Veo-generated, frame-extracted, matted, aligned).
 // Frames live at `${base}/NNN.webp` for NNN in 000..count-1.
 export interface Flipbook {
   base: string;
@@ -35,6 +35,6 @@ export interface Flipbook {
 
 export const ANIMS: Partial<Record<VariantName, Partial<Record<PoseName, Flipbook>>>> = {
   stylized: {
-    idle: { base: `${ROOT}/teresa/anim-idle`, count: 76, fps: 12, loop: true },
+    idle: { base: `${ROOT}/teresa/anim-idle-24`, count: 151, fps: 24, loop: true },
   },
 };
