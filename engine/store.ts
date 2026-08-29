@@ -17,7 +17,7 @@ export interface SplatRec {
   rot: number;
 }
 
-export type CharStyle = "stylized" | "blocky";
+export type CharStyle = "stylized" | "realistic";
 
 export type Reaction =
   | { kind: "idle"; seq: number }
