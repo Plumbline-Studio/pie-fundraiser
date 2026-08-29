@@ -1,16 +1,28 @@
-# [PROJECT NAME] — Claude context
+# First Bank Pie Fundraiser — Claude context
 
 > This repo was born from the Plumbline project template. Replace bracketed fields at creation; keep the rest — it is the conditioning layer, not boilerplate.
 
-## What this is
-[One paragraph: what this software is, who it serves, which venture or client it belongs to.]
+> **Tool-Maker**: For architectural planning, project plans, or Claude Code briefs, read `../tool-maker/tool-maker/SKILL.md` and `../tool-maker/knowledge-base/INDEX.md`. Existing plans are in `../tool-maker/projects/`.
+>
+> **Source of truth**: The canonical project plan lives at `../tool-maker/projects/first-bank-pie-fundraiser.md` (discovery: `first-bank-pie-fundraiser-discovery.md`, v2). A working copy exists in this repo's `docs/` folder. If they conflict, the tool-maker version is authoritative for architecture; the repo is authoritative for implementation state. The execution brief is `BRIEF.md` (v2, game-first) in this repo.
 
-- **Plan of record:** `tool-maker/projects/[project-name]/` in the Plumbline-Studio/tool-maker repo. Read the plan before substantial work. If code and plan diverge, say so — don't silently follow either.
-- **Business files:** K Drive `10-19 Plumbline Studio` → [project number + name]. Client-facing material lives there, not here.
-- **Pipeline record:** `11 Studio Ops\Pipeline\PIPELINE.md` on K Drive.
+## What this is
+A PWA game where FirstBank's ~360 employees pledge United Way donations by flick-throwing animated pies at avatars of four regional presidents. Pro bono Plumbline Studio engagement (SME: Teresa Fridley, FirstBank United Way committee). The game IS the product; the engine layer is the reusable white-label asset. Money NEVER touches the app — pledges only; reconciliation report matches the bank's existing United Way account rails. Playable preview due Sept 5, 2026; Teresa plays Sept 8–9; campaign ends Dec 1.
+
+- **Plan of record:** `../tool-maker/projects/first-bank-pie-fundraiser.md` in the Plumbline-Studio/tool-maker repo. Read the plan before substantial work. If code and plan diverge, say so — don't silently follow either.
+- **Business files:** K Drive `10-19 Plumbline Studio` → [project number TBD — folder + pipeline record not yet created].
+- **Pipeline record:** `11 Studio Ops\Pipeline\PIPELINE.md` on K Drive [pending].
 
 ## The gate
 `WORTHINESS.md` in this repo must be complete before implementation work merges. If it is unfilled and you are asked to build features, complete the gate conversation with Kyle first. The two named values and the indicator light are required — you can't live into values you can't name.
+
+## Hard project rules (from discovery — do not relitigate)
+- No payment processing, SDKs, or stubs. Ever. The absence is a feature.
+- No individual donor leaderboard (`individualLeaderboard` flag stays off). Feed shows names + fun copy, never donation amounts.
+- No real president names/likenesses until HR approves — Teresa's avatar + silhouettes only in the demo.
+- President-vs-president competition only; no region-vs-region.
+- FirstBank-only branding until United Way permission lands.
+- Never put Teresa in an unapproved position — everything routes through her chairperson.
 
 ## Operating principles (Plumbline / Tool Maker layer)
 - **Build it true.** Plumb, square, honest construction — in code and in claims. No dark patterns; the integrity veto is absolute.
@@ -21,5 +33,5 @@
 ## Working with Kyle
 Window, not mirror: disagree when you disagree; don't pad; lead with the actionable. Push hard on load-bearing decisions, give quick opinions on reversible ones, then build.
 
-## Stack defaults (unless the plan says otherwise)
-Next.js / React / TypeScript / Tailwind · Supabase or Neon · Cloudflare Workers/Pages · Vercel · Clerk auth · Stripe/Clover payments · PWA-first.
+## Stack (per BRIEF.md v2)
+Next.js (App Router) / TypeScript / Tailwind · react-three-fiber + drei (+ rapier or hand-rolled ballistics) · Framer Motion · WebAudio/tone.js (muted by default) · Vercel · PWA-first. Demo: local/mock state only — no Supabase, no auth yet.

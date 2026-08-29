@@ -1,0 +1,14 @@
+{
+  "slug": "pie-fundraiser",
+  "surfaces": [
+    "employee arena (throw screen, the one employee surface)",
+    "committee admin (Phase 2: totals, reconciliation export)"
+  ],
+  "born": {
+    "date": "2026-08-29",
+    "plan": "tool-maker/projects/first-bank-pie-fundraiser.md",
+    "plan_commit": "684e18f791dea048821d114a7b48d9765c28406e",
+    "template_commit": "9bd431326b4ae50a47da0c20c8bec659003ee82c",
+    "note": "Birth certificate paid retroactively 2026-08-29 (repo pre-existed wiring). plan_commit references discovery v2 commit; full plan file pending push from local tool-maker clone."
+  }
+}
