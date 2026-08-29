@@ -17,6 +17,8 @@ export interface SplatRec {
   rot: number;
 }
 
+export type CharStyle = "stylized" | "blocky";
+
 export type Reaction =
   | { kind: "idle"; seq: number }
   | { kind: "hitFace"; seq: number }
@@ -45,7 +47,9 @@ interface GameState {
   pledgeOpen: boolean;
   throwsInFlight: number;
   seq: number;
+  style: CharStyle;
 
+  setStyle: (style: CharStyle) => void;
   setTarget: (t: TargetId) => void;
   setPledgeOpen: (open: boolean) => void;
   buyPies: (count: number, negative: boolean) => void;
@@ -71,7 +75,9 @@ export const useGame = create<GameState>((set, get) => ({
   pledgeOpen: false,
   throwsInFlight: 0,
   seq: 0,
+  style: "stylized",
 
+  setStyle: (style) => set({ style }),
   setTarget: (t) => set({ target: t }),
   setPledgeOpen: (open) => set({ pledgeOpen: open }),
 
