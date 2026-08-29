@@ -5,9 +5,17 @@
 html,
 body {
   height: 100%;
+  overflow: hidden;
   overscroll-behavior: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Full-height app container with graceful fallback where dvh is unsupported.
+   Mobile browsers misreport vh while the URL bar animates; dvh tracks it. */
+.app-height {
+  height: 100vh;
+  height: 100dvh;
 }
 
 .splat-pop {
