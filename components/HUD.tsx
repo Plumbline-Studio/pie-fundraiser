@@ -4,6 +4,11 @@ import { useGame, TARGETS } from "@/engine/store";
 import { bus } from "@/engine/events";
 import { FLAGS, PRICING } from "@/engine/config";
 
+// HUD is split into three pieces so the top and bottom bars live in normal
+// document flow (mobile browsers misreport the viewport while the URL bar
+// collapses — absolutely-positioned chrome gets hidden). Only in-game
+// overlays are absolute, anchored to the game area, which is always visible.
+
 function ScreenSplat() {
   const [splat, setSplat] = useState(0);
   useEffect(
@@ -68,18 +73,13 @@ function PledgeModal() {
   );
 }
 
-export default function HUD() {
-  const piesLeft = useGame((s) => s.piesLeft);
-  const negative = useGame((s) => s.negative);
+/** Standings strip — normal document flow, safe-area padded. */
+export function TopBar() {
   const target = useGame((s) => s.target);
   const setTarget = useGame((s) => s.setTarget);
   const standings = useGame((s) => s.standings);
   const campaignTotal = useGame((s) => s.campaignTotal);
-  const feed = useGame((s) => s.feed);
-  const setPledgeOpen = useGame((s) => s.setPledgeOpen);
   const fakeFeedTick = useGame((s) => s.fakeFeedTick);
-  const style = useGame((s) => s.style);
-  const setStyle = useGame((s) => s.setStyle);
 
   useEffect(() => {
     const iv = setInterval(() => fakeFeedTick(), 5000 + Math.random() * 4000);
@@ -87,29 +87,37 @@ export default function HUD() {
   }, [fakeFeedTick]);
 
   return (
-    <>
-      {/* standings strip */}
-      <div className="absolute left-0 right-0 top-0 z-20 bg-white/85 backdrop-blur border-b border-gray-200">
-        <div className="mx-auto flex max-w-xl items-center gap-1 overflow-x-auto px-2 py-1.5">
-          {TARGETS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTarget(t.id)}
-              className={`flex shrink-0 flex-col items-center rounded-lg px-2.5 py-1 ${target === t.id ? "bg-red-50 ring-2 ring-bank-red" : ""}`}
-            >
-              <span className="text-[11px] font-semibold text-gray-700 whitespace-nowrap">{t.label}</span>
-              <span className="text-sm font-extrabold text-bank-red">{standings[t.id]} {"\u{1F967}"}</span>
-            </button>
-          ))}
-          <div className="ml-auto shrink-0 pl-2 text-right">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Campaign</div>
-            <div className="text-sm font-extrabold text-green-700">${campaignTotal.toLocaleString()}</div>
-          </div>
+    <div className="z-20 shrink-0 border-b border-gray-200 bg-white/95 pt-[env(safe-area-inset-top)]">
+      <div className="mx-auto flex max-w-xl items-center gap-1 overflow-x-auto px-2 py-1.5">
+        {TARGETS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTarget(t.id)}
+            className={`flex shrink-0 flex-col items-center rounded-lg px-2.5 py-1 ${target === t.id ? "bg-red-50 ring-2 ring-bank-red" : ""}`}
+          >
+            <span className="whitespace-nowrap text-[11px] font-semibold text-gray-700">{t.label}</span>
+            <span className="text-sm font-extrabold text-bank-red">{standings[t.id]} {"\u{1F967}"}</span>
+          </button>
+        ))}
+        <div className="ml-auto shrink-0 pl-2 text-right">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Campaign</div>
+          <div className="text-sm font-extrabold text-green-700">${campaignTotal.toLocaleString()}</div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* activity feed — bottom, clear of the character */}
-      <div className="pointer-events-none absolute bottom-20 left-0 right-0 z-20 mx-auto max-w-xl px-3">
+/** Overlays anchored to the game area (not the viewport). */
+export function GameOverlay() {
+  const feed = useGame((s) => s.feed);
+  const style = useGame((s) => s.style);
+  const setStyle = useGame((s) => s.setStyle);
+
+  return (
+    <>
+      {/* activity feed — bottom of game area, clear of the character */}
+      <div className="pointer-events-none absolute bottom-2 left-0 right-0 z-20 mx-auto max-w-xl px-3">
         {feed.slice(0, 2).map((f) => (
           <div key={f.id} className="mb-1 w-fit max-w-full truncate rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white">
             {f.text}
@@ -120,26 +128,34 @@ export default function HUD() {
       {/* A/B style toggle — the demo's one research question */}
       <button
         onClick={() => setStyle(style === "stylized" ? "realistic" : "stylized")}
-        className="absolute right-3 top-14 z-20 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-700 shadow"
+        className="absolute right-3 top-3 z-20 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-700 shadow"
       >
         {style === "stylized" ? "style: cartoon ✨" : "style: realistic \u{1F4F7}"}
       </button>
 
-      {/* bottom bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/30 to-transparent pb-5 pt-8">
-        <div className="mx-auto flex max-w-xl items-center justify-between px-4">
-          <div className="rounded-full bg-white/90 px-4 py-2 text-sm font-extrabold text-gray-800 shadow">
-            {piesLeft} {"\u{1F967}"} left {negative && <span title="negative pies armed">{"\u{1F608}"}</span>}
-          </div>
-          <div className="text-center text-xs font-semibold text-white drop-shadow">flick up to throw</div>
-          <button onClick={() => setPledgeOpen(true)} className="rounded-full bg-bank-red px-4 py-2 text-sm font-extrabold text-white shadow active:scale-95">
-            + pies
-          </button>
-        </div>
-      </div>
-
       <ScreenSplat />
       <PledgeModal />
     </>
+  );
+}
+
+/** Bottom bar — normal document flow, safe-area padded. */
+export function BottomBar() {
+  const piesLeft = useGame((s) => s.piesLeft);
+  const negative = useGame((s) => s.negative);
+  const setPledgeOpen = useGame((s) => s.setPledgeOpen);
+
+  return (
+    <div className="z-20 shrink-0 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+      <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-2.5">
+        <div className="rounded-full bg-gray-100 px-4 py-2 text-sm font-extrabold text-gray-800">
+          {piesLeft} {"\u{1F967}"} left {negative && <span title="negative pies armed">{"\u{1F608}"}</span>}
+        </div>
+        <div className="text-center text-xs font-semibold text-gray-500">flick up to throw</div>
+        <button onClick={() => setPledgeOpen(true)} className="rounded-full bg-bank-red px-4 py-2 text-sm font-extrabold text-white shadow active:scale-95">
+          + pies
+        </button>
+      </div>
+    </div>
   );
 }
