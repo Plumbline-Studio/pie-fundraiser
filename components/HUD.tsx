@@ -108,8 +108,8 @@ export default function HUD() {
         </div>
       </div>
 
-      {/* activity feed */}
-      <div className="pointer-events-none absolute left-0 right-0 top-14 z-20 mx-auto max-w-xl px-3">
+      {/* activity feed — bottom, clear of the character */}
+      <div className="pointer-events-none absolute bottom-20 left-0 right-0 z-20 mx-auto max-w-xl px-3">
         {feed.slice(0, 2).map((f) => (
           <div key={f.id} className="mb-1 w-fit max-w-full truncate rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white">
             {f.text}
@@ -120,7 +120,7 @@ export default function HUD() {
       {/* A/B style toggle — the demo's one research question */}
       <button
         onClick={() => setStyle(style === "stylized" ? "blocky" : "stylized")}
-        className="absolute right-3 top-24 z-20 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-700 shadow"
+        className="absolute right-3 top-14 z-20 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-700 shadow"
       >
         {style === "stylized" ? "style: art ✨" : "style: blocky \u{1F9F1}"}
       </button>
