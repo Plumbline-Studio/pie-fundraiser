@@ -15,6 +15,7 @@ export interface SplatRec {
   pos: [number, number, number];
   size: number;
   rot: number;
+  born: number; // ms epoch — drives hold + fade-out
 }
 
 export type CharStyle = "stylized" | "realistic";
@@ -57,6 +58,7 @@ interface GameState {
   setInFlight: (delta: number) => void;
   registerHit: (zone: "face" | "body", localPos: [number, number, number]) => void;
   registerMiss: () => void;
+  pruneSplats: (maxAgeMs: number) => void;
   fakeFeedTick: () => void;
 }
 
@@ -119,7 +121,7 @@ export const useGame = create<GameState>((set, get) => ({
         standings: next,
         splats: [
           ...s.splats.slice(-23), // cap decals for perf; oldest fade off
-          { id: splatId++, zone, pos: localPos, size: zone === "face" ? 0.42 + Math.random() * 0.18 : 0.5 + Math.random() * 0.25, rot: Math.random() * Math.PI * 2 },
+          { id: splatId++, zone, pos: localPos, size: zone === "face" ? 0.42 + Math.random() * 0.18 : 0.5 + Math.random() * 0.25, rot: Math.random() * Math.PI * 2, born: Date.now() },
         ],
         reaction: { kind: zone === "face" ? "hitFace" : "hitBody", seq: s.seq + 1 },
         seq: s.seq + 1,
@@ -133,6 +135,13 @@ export const useGame = create<GameState>((set, get) => ({
       seq: s.seq + 1,
       feed: [{ id: feedId++, text: "Swing and a miss — they saw that one coming." }, ...s.feed].slice(0, 6),
     })),
+
+  pruneSplats: (maxAgeMs) =>
+    set((s) => {
+      const now = Date.now();
+      const kept = s.splats.filter((x) => now - x.born < maxAgeMs);
+      return kept.length === s.splats.length ? {} : { splats: kept };
+    }),
 
   fakeFeedTick: () =>
     set((s) => {
