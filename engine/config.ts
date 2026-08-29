@@ -1,7 +1,7 @@
 // Engine feel constants — tune these first when the throw doesn't feel right.
 export const FEEL = {
   gravity: 14, // world units/s^2 — slightly heavier than earth reads "snappier"
-  launchPos: [0, 0.95, 1.7] as [number, number, number],
+  launchPos: [0, 0.9, 1.0] as [number, number, number],
   targetZ: -2.8, // character stands here
   // flick mapping: screen drag (px, px/ms) -> world velocity
   forwardBase: 7.5,
