@@ -5,11 +5,11 @@ import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { useGame } from "@/engine/store";
 import { FEEL } from "@/engine/config";
-import { POSE_SETS, POSE_ASPECT, PoseName, VariantName } from "@/engine/characterAsset";
+import { POSE_SETS, POSE_ASPECT, PoseName, VariantName, ANIMS } from "@/engine/characterAsset";
 
-// Full-body 2.5D character: one plane, six pose textures, a reaction timeline
-// per hit type, ~150ms crossfade between poses so swaps read as motion,
-// plus procedural life (breath, sway, recoil) on top.
+// Full-body 2.5D character: pose textures + reaction timelines + a Veo-derived
+// flipbook idle loop (real breathing/blinking/weight-shift), ~150ms crossfade
+// between poses, and procedural recoil layered on top.
 
 const PLANE_H = 2.55;
 const PLANE_W = PLANE_H * POSE_ASPECT;
@@ -81,6 +81,25 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
   }, [variant]);
   const splatTex = useMemo(makeSplatTexture, []);
 
+  // flipbook idle animation (Veo-derived frames), when available for this variant
+  const idleAnim = ANIMS[variant]?.idle;
+  const idleFlip = useMemo(() => {
+    if (!idleAnim) return null;
+    const loader = new THREE.TextureLoader();
+    const state = { loaded: 0, ready: false };
+    const frames = Array.from({ length: idleAnim.count }, (_, i) => {
+      const tex = loader.load(`${idleAnim.base}/${String(i).padStart(3, "0")}.webp`, () => {
+        state.loaded += 1;
+        if (state.loaded === idleAnim.count) state.ready = true;
+      });
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      return tex;
+    });
+    return { frames, state };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variant]);
+
   // sweep expired splat decals out of the store
   useEffect(() => {
     const iv = setInterval(() => pruneSplats(SPLAT_MAX_AGE), 1500);
@@ -124,6 +143,16 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
     if (matPrev.current) matPrev.current.opacity = 1 - f;
     if (f >= 1 && prevPose) setPrevPose(null);
 
+    // --- flipbook: real motion while idle ---
+    if (matCur.current) {
+      if (pose === "idle" && idleAnim && idleFlip && idleFlip.state.ready) {
+        const fi = Math.floor(t * idleAnim.fps) % idleAnim.count;
+        matCur.current.map = idleFlip.frames[fi];
+      } else if (matCur.current.map !== textures[pose]) {
+        matCur.current.map = textures[pose];
+      }
+    }
+
     // --- splat decal fade-out ---
     const now = Date.now();
     splatMats.current.forEach((mat, id) => {
@@ -135,8 +164,14 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
 
     // --- procedural life on top of the pose swap ---
     root.current.rotation.y = Math.sin(t * 0.6) * 0.04;
-    plane.current.scale.y = 1 + Math.sin(t * 2.1) * 0.006;
-    plane.current.scale.x = 1 - Math.sin(t * 2.1) * 0.003;
+    const flipActive = pose === "idle" && idleAnim && idleFlip && idleFlip.state.ready;
+    if (!flipActive) {
+      plane.current.scale.y = 1 + Math.sin(t * 2.1) * 0.006;
+      plane.current.scale.x = 1 - Math.sin(t * 2.1) * 0.003;
+    } else {
+      plane.current.scale.y = 1;
+      plane.current.scale.x = 1;
+    }
 
     const active = reaction.kind !== "idle" && rt < total;
     const k = active ? Math.sin((rt / total) * Math.PI) : 0;
