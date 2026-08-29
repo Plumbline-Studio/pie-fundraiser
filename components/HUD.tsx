@@ -78,6 +78,8 @@ export default function HUD() {
   const feed = useGame((s) => s.feed);
   const setPledgeOpen = useGame((s) => s.setPledgeOpen);
   const fakeFeedTick = useGame((s) => s.fakeFeedTick);
+  const style = useGame((s) => s.style);
+  const setStyle = useGame((s) => s.setStyle);
 
   useEffect(() => {
     const iv = setInterval(() => fakeFeedTick(), 5000 + Math.random() * 4000);
@@ -114,6 +116,14 @@ export default function HUD() {
           </div>
         ))}
       </div>
+
+      {/* A/B style toggle — the demo's one research question */}
+      <button
+        onClick={() => setStyle(style === "stylized" ? "blocky" : "stylized")}
+        className="absolute right-3 top-24 z-20 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-700 shadow"
+      >
+        {style === "stylized" ? "style: art ✨" : "style: blocky \u{1F9F1}"}
+      </button>
 
       {/* bottom bar */}
       <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/30 to-transparent pb-5 pt-8">
