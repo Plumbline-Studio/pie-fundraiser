@@ -1,0 +1,12 @@
+{
+  "name": "Pie Fundraiser",
+  "short_name": "Pies",
+  "description": "Throw pies. Raise money. All pledges go to United Way.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#dfe9f2",
+  "theme_color": "#C8102E",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
