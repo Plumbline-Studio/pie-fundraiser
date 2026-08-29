@@ -13,8 +13,8 @@ function CameraRig() {
   const size = useThree((s) => s.size);
   useEffect(() => {
     const aspect = size.width / size.height;
-    camera.position.set(0, 1.55, aspect > 1.4 ? 3.2 : 3.7);
-    camera.lookAt(0, 1.35, FEEL.targetZ);
+    camera.position.set(0, 1.5, aspect > 1.4 ? 2.0 : 2.4);
+    camera.lookAt(0, 1.32, FEEL.targetZ);
   }, [camera, size]);
   return null;
 }
@@ -25,7 +25,7 @@ export default function GameCanvas() {
     <Canvas
       shadows
       dpr={[1, 2]}
-      camera={{ position: [0, 1.55, 3.7], fov: 50 }}
+      camera={{ position: [0, 1.5, 2.4], fov: 50 }}
       style={{ touchAction: "none" }}
     >
       <CameraRig />
