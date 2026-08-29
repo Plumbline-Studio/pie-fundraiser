@@ -1,9 +1,24 @@
 "use client";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
+import { useEffect } from "react";
 import Character from "./Character";
 import BillboardCharacter from "./BillboardCharacter";
 import PieManager from "./PieManager";
 import { useGame } from "@/engine/store";
+import { FEEL } from "@/engine/config";
+
+// Frame the character tightly on any aspect ratio: pull in close, aim at her
+// chest height so she fills the vertical, not the floor and sky.
+function CameraRig() {
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    camera.position.set(0, 1.55, aspect > 1.4 ? 3.2 : 3.7);
+    camera.lookAt(0, 1.35, FEEL.targetZ);
+  }, [camera, size]);
+  return null;
+}
 
 export default function GameCanvas() {
   const style = useGame((s) => s.style);
@@ -11,9 +26,10 @@ export default function GameCanvas() {
     <Canvas
       shadows
       dpr={[1, 2]}
-      camera={{ position: [0, 1.6, 6.2], fov: 50 }}
+      camera={{ position: [0, 1.55, 3.7], fov: 50 }}
       style={{ touchAction: "none" }}
     >
+      <CameraRig />
       <color attach="background" args={["#dfe9f2"]} />
       <fog attach="fog" args={["#dfe9f2", 12, 24]} />
       <ambientLight intensity={0.7} />
@@ -29,9 +45,9 @@ export default function GameCanvas() {
         <planeGeometry args={[40, 40]} />
         <meshStandardMaterial color="#c9d6e2" />
       </mesh>
-      {/* backdrop banner */}
-      <mesh position={[0, 2.6, -8]}>
-        <planeGeometry args={[14, 6]} />
+      {/* backdrop banner — wide enough to fill desktop aspect ratios */}
+      <mesh position={[0, 3.4, -9]}>
+        <planeGeometry args={[44, 9]} />
         <meshStandardMaterial color="#C8102E" />
       </mesh>
       {style === "stylized" ? <BillboardCharacter /> : <Character />}
