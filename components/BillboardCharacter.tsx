@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
@@ -8,10 +8,15 @@ import { FEEL } from "@/engine/config";
 import { POSE_SETS, POSE_ASPECT, PoseName, VariantName } from "@/engine/characterAsset";
 
 // Full-body 2.5D character: one plane, six pose textures, a reaction timeline
-// per hit type, plus procedural life (breath, sway, recoil) on top.
+// per hit type, ~150ms crossfade between poses so swaps read as motion,
+// plus procedural life (breath, sway, recoil) on top.
 
 const PLANE_H = 2.55;
 const PLANE_W = PLANE_H * POSE_ASPECT;
+const CROSSFADE = 0.15; // seconds
+const SPLAT_HOLD = 6000; // ms at full opacity
+const SPLAT_FADE = 3000; // ms fading out
+const SPLAT_MAX_AGE = SPLAT_HOLD + SPLAT_FADE + 200;
 
 // reaction timelines: sequence of [pose, seconds]
 const TIMELINES: Record<"hitFace" | "hitBody" | "miss", [PoseName, number][]> = {
@@ -51,10 +56,16 @@ function makeSplatTexture(): THREE.CanvasTexture | null {
 export default function BillboardCharacter({ variant = "stylized" }: { variant?: VariantName }) {
   const root = useRef<THREE.Group>(null!);
   const plane = useRef<THREE.Group>(null!);
+  const matCur = useRef<THREE.MeshStandardMaterial>(null!);
+  const matPrev = useRef<THREE.MeshStandardMaterial>(null!);
+  const splatMats = useRef(new Map<number, THREE.SpriteMaterial>());
   const reaction = useGame((s) => s.reaction);
   const splats = useGame((s) => s.splats);
+  const pruneSplats = useGame((s) => s.pruneSplats);
   const anim = useRef({ seq: -1, t0: 0 });
+  const fade = useRef({ t0: -10 });
   const [pose, setPose] = useState<PoseName>("idle");
+  const [prevPose, setPrevPose] = useState<PoseName | null>(null);
 
   const textures = useMemo(() => {
     const poses = POSE_SETS[variant];
@@ -69,6 +80,12 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
     return out;
   }, [variant]);
   const splatTex = useMemo(makeSplatTexture, []);
+
+  // sweep expired splat decals out of the store
+  useEffect(() => {
+    const iv = setInterval(() => pruneSplats(SPLAT_MAX_AGE), 1500);
+    return () => clearInterval(iv);
+  }, [pruneSplats]);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -95,15 +112,34 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
         }
       }
     }
-    if (nextPose !== pose) setPose(nextPose);
-    const active = reaction.kind !== "idle" && rt < total;
-    const k = active ? Math.sin((rt / total) * Math.PI) : 0;
+    if (nextPose !== pose) {
+      setPrevPose(pose);
+      fade.current.t0 = t;
+      setPose(nextPose);
+    }
+
+    // --- crossfade between poses ---
+    const f = THREE.MathUtils.clamp((t - fade.current.t0) / CROSSFADE, 0, 1);
+    if (matCur.current) matCur.current.opacity = f;
+    if (matPrev.current) matPrev.current.opacity = 1 - f;
+    if (f >= 1 && prevPose) setPrevPose(null);
+
+    // --- splat decal fade-out ---
+    const now = Date.now();
+    splatMats.current.forEach((mat, id) => {
+      const rec = splats.find((s) => s.id === id);
+      if (!rec) return;
+      const age = now - rec.born;
+      mat.opacity = age < SPLAT_HOLD ? 0.9 : 0.9 * Math.max(0, 1 - (age - SPLAT_HOLD) / SPLAT_FADE);
+    });
 
     // --- procedural life on top of the pose swap ---
     root.current.rotation.y = Math.sin(t * 0.6) * 0.04;
     plane.current.scale.y = 1 + Math.sin(t * 2.1) * 0.006;
     plane.current.scale.x = 1 - Math.sin(t * 2.1) * 0.003;
 
+    const active = reaction.kind !== "idle" && rt < total;
+    const k = active ? Math.sin((rt / total) * Math.PI) : 0;
     if (reaction.kind === "hitFace" && active) {
       plane.current.rotation.x = -0.22 * k + Math.sin(rt * 40) * 0.04 * k; // recoil + shudder
       plane.current.position.z = -0.1 * k;
@@ -124,11 +160,31 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
   return (
     <group ref={root} position={[0, 0, FEEL.targetZ]}>
       <group ref={plane} position={[0, PLANE_H / 2, 0]}>
+        {/* previous pose, fading out under the current one */}
+        {prevPose && (
+          <mesh position={[0, 0, -0.004]}>
+            <planeGeometry args={[PLANE_W, PLANE_H]} />
+            <meshStandardMaterial
+              ref={matPrev}
+              map={textures[prevPose]}
+              transparent
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        )}
         <mesh>
           <planeGeometry args={[PLANE_W, PLANE_H]} />
-          <meshStandardMaterial map={textures[pose]} transparent alphaTest={0.1} side={THREE.DoubleSide} />
+          <meshStandardMaterial
+            ref={matCur}
+            map={textures[pose]}
+            transparent
+            alphaTest={0.02}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
         </mesh>
-        {/* persistent splat decals ride the plane (accumulation across hits) */}
+        {/* splat decals ride the plane; opacity animated in useFrame */}
         {splatTex &&
           splats.map((s) => {
             const y =
@@ -138,7 +194,16 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
             const x = THREE.MathUtils.clamp(s.pos[0] * 0.4, -PLANE_W / 2 + 0.15, PLANE_W / 2 - 0.15);
             return (
               <sprite key={s.id} position={[x, y, 0.06]} scale={[s.size * 0.7, s.size * 0.7, 1]}>
-                <spriteMaterial map={splatTex} rotation={s.rot} depthWrite={false} opacity={0.9} />
+                <spriteMaterial
+                  ref={(m) => {
+                    if (m) splatMats.current.set(s.id, m);
+                    else splatMats.current.delete(s.id);
+                  }}
+                  map={splatTex}
+                  rotation={s.rot}
+                  depthWrite={false}
+                  opacity={0.9}
+                />
               </sprite>
             );
           })}
