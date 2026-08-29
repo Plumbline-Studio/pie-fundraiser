@@ -119,10 +119,10 @@ export default function HUD() {
 
       {/* A/B style toggle — the demo's one research question */}
       <button
-        onClick={() => setStyle(style === "stylized" ? "blocky" : "stylized")}
+        onClick={() => setStyle(style === "stylized" ? "realistic" : "stylized")}
         className="absolute right-3 top-14 z-20 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-700 shadow"
       >
-        {style === "stylized" ? "style: art ✨" : "style: blocky \u{1F9F1}"}
+        {style === "stylized" ? "style: cartoon ✨" : "style: realistic \u{1F4F7}"}
       </button>
 
       {/* bottom bar */}
