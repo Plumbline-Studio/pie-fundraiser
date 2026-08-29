@@ -5,7 +5,7 @@ import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { useGame } from "@/engine/store";
 import { FEEL } from "@/engine/config";
-import { POSES, POSE_ASPECT, PoseName } from "@/engine/characterAsset";
+import { POSE_SETS, POSE_ASPECT, PoseName, VariantName } from "@/engine/characterAsset";
 
 // Full-body 2.5D character: one plane, six pose textures, a reaction timeline
 // per hit type, plus procedural life (breath, sway, recoil) on top.
@@ -48,7 +48,7 @@ function makeSplatTexture(): THREE.CanvasTexture | null {
   return tex;
 }
 
-export default function BillboardCharacter() {
+export default function BillboardCharacter({ variant = "stylized" }: { variant?: VariantName }) {
   const root = useRef<THREE.Group>(null!);
   const plane = useRef<THREE.Group>(null!);
   const reaction = useGame((s) => s.reaction);
@@ -57,16 +57,17 @@ export default function BillboardCharacter() {
   const [pose, setPose] = useState<PoseName>("idle");
 
   const textures = useMemo(() => {
+    const poses = POSE_SETS[variant];
     const loader = new THREE.TextureLoader();
     const out = {} as Record<PoseName, THREE.Texture>;
-    (Object.keys(POSES) as PoseName[]).forEach((k) => {
-      const tex = loader.load(POSES[k]);
+    (Object.keys(poses) as PoseName[]).forEach((k) => {
+      const tex = loader.load(poses[k]);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 4;
       out[k] = tex;
     });
     return out;
-  }, []);
+  }, [variant]);
   const splatTex = useMemo(makeSplatTexture, []);
 
   useFrame(({ clock }) => {
