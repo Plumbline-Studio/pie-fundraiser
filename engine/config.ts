@@ -15,12 +15,12 @@ export const FEEL = {
   pieRadius: 0.32,
   pieSpin: 9,
   maxFlightTime: 2.2,
-  // collision zones (character local, group origin at feet)
-  headCenter: [0, 2.05, 0] as [number, number, number],
-  headRadius: 0.48,
-  bodyTop: 1.62,
-  bodyBottom: 0.35,
-  bodyRadius: 0.55,
+  // collision zones (character local, group origin at feet; full-body figure ~2.55 tall)
+  headCenter: [0, 2.18, 0] as [number, number, number],
+  headRadius: 0.38,
+  bodyTop: 1.85,
+  bodyBottom: 0.1,
+  bodyRadius: 0.5,
 };
 
 export const PRICING = { perPie: 5 }; // demo pricing: $5/pie
