@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import HUD from "@/components/HUD";
+import { TopBar, GameOverlay, BottomBar } from "@/components/HUD";
 import ThrowLayer from "@/components/ThrowLayer";
 
 const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
@@ -17,10 +17,14 @@ const GameCanvas = dynamic(() => import("@/components/GameCanvas"), {
 
 export default function Home() {
   return (
-    <main className="relative h-[100dvh] w-full overflow-hidden bg-[#dfe9f2]">
-      <GameCanvas />
-      <ThrowLayer />
-      <HUD />
+    <main className="app-height flex w-full flex-col overflow-hidden bg-[#dfe9f2]">
+      <TopBar />
+      <div className="relative min-h-0 flex-1">
+        <GameCanvas />
+        <ThrowLayer />
+        <GameOverlay />
+      </div>
+      <BottomBar />
     </main>
   );
 }
