@@ -55,22 +55,41 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
     return out;
   }, [variant]);
 
-  // flipbook idle animation (Veo-derived frames), when available for this variant
+  // flipbook idle animation (Veo-derived frames), when available for this variant.
+  // Per-frame load tracking: playback starts once ~1s of frames is in, failed
+  // frames retry and are walked around — never an all-or-nothing gate.
   const idleAnim = ANIMS[variant]?.idle;
+  const lastIdleTex = useRef<THREE.Texture | null>(null);
   const idleFlip = useMemo(() => {
     if (!idleAnim) return null;
     const loader = new THREE.TextureLoader();
-    const state = { loaded: 0, ready: false };
-    const frames = Array.from({ length: idleAnim.count }, (_, i) => {
-      const tex = loader.load(`${idleAnim.base}/${String(i).padStart(3, "0")}.webp`, () => {
-        state.loaded += 1;
-        if (state.loaded === idleAnim.count) state.ready = true;
-      });
+    const loadedFlags: boolean[] = new Array(idleAnim.count).fill(false);
+    const state = { loaded: 0 };
+    const frames: THREE.Texture[] = new Array(idleAnim.count);
+    const loadFrame = (i: number, attempt: number): THREE.Texture => {
+      const tex = loader.load(
+        `${idleAnim.base}/${String(i).padStart(3, "0")}.webp`,
+        () => {
+          if (!loadedFlags[i]) {
+            loadedFlags[i] = true;
+            state.loaded += 1;
+          }
+        },
+        undefined,
+        () => {
+          if (attempt < 3) {
+            setTimeout(() => {
+              frames[i] = loadFrame(i, attempt + 1);
+            }, 800 * (attempt + 1));
+          }
+        }
+      );
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 4;
       return tex;
-    });
-    return { frames, state };
+    };
+    for (let i = 0; i < idleAnim.count; i++) frames[i] = loadFrame(i, 0);
+    return { frames, loadedFlags, state };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant]);
 
@@ -111,19 +130,42 @@ export default function BillboardCharacter({ variant = "stylized" }: { variant?:
     if (matPrev.current) matPrev.current.opacity = 1 - f;
     if (f >= 1 && prevPose) setPrevPose(null);
 
+    // when fading out of the animated idle, fade the frame she was actually
+    // showing — not the static idle pose (that mismatch read as a "break")
+    if (prevPose === "idle" && lastIdleTex.current && matPrev.current) {
+      if (matPrev.current.map !== lastIdleTex.current) matPrev.current.map = lastIdleTex.current;
+    }
+
     // --- flipbook with inter-frame blending: real motion while idle ---
-    const flipActive = pose === "idle" && !!idleAnim && !!idleFlip && idleFlip.state.ready;
+    const flipActive =
+      pose === "idle" &&
+      !!idleAnim &&
+      !!idleFlip &&
+      idleFlip.state.loaded >= Math.min(24, idleAnim.count);
     if (matCur.current) {
       if (flipActive && idleAnim && idleFlip) {
         const fpos = (t * idleAnim.fps) % idleAnim.count;
-        const i0 = Math.floor(fpos);
-        const i1 = (i0 + 1) % idleAnim.count;
+        let i0 = Math.floor(fpos);
         const frac = fpos - i0;
-        matCur.current.map = idleFlip.frames[i0];
-        if (matBlend.current && blendMesh.current) {
-          blendMesh.current.visible = true;
-          matBlend.current.map = idleFlip.frames[i1];
-          matBlend.current.opacity = frac * f;
+        // walk back to the nearest loaded frame if this one isn't in yet
+        let guard = 0;
+        while (!idleFlip.loadedFlags[i0] && guard < idleAnim.count) {
+          i0 = (i0 - 1 + idleAnim.count) % idleAnim.count;
+          guard++;
+        }
+        if (guard < idleAnim.count) {
+          matCur.current.map = idleFlip.frames[i0];
+          lastIdleTex.current = idleFlip.frames[i0];
+          const i1 = (i0 + 1) % idleAnim.count;
+          if (matBlend.current && blendMesh.current) {
+            if (guard === 0 && idleFlip.loadedFlags[i1]) {
+              blendMesh.current.visible = true;
+              matBlend.current.map = idleFlip.frames[i1];
+              matBlend.current.opacity = frac * f;
+            } else {
+              blendMesh.current.visible = false;
+            }
+          }
         }
       } else {
         if (blendMesh.current) blendMesh.current.visible = false;
