@@ -11,19 +11,25 @@ import { FLAGS, PRICING } from "@/engine/config";
 
 function ScreenSplat() {
   const [splat, setSplat] = useState(0);
-  useEffect(
-    () =>
-      bus.on("facehit", () => {
-        setSplat((s) => s + 1);
-        setTimeout(() => setSplat((s) => Math.max(0, s - 1)), 450);
-      }),
-    []
-  );
-  if (!splat) return null;
+  const [flash, setFlash] = useState(0);
+  useEffect(() => {
+    const off = bus.on("facehit", () => {
+      setSplat((s) => s + 1);
+      setFlash((n) => n + 1);
+      setTimeout(() => setSplat((s) => Math.max(0, s - 1)), 450);
+      setTimeout(() => setFlash((n) => Math.max(0, n - 1)), 180);
+    });
+    return off;
+  }, []);
   return (
-    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-      <div className="splat-pop text-[9rem]">{"\u{1F967}"}</div>
-    </div>
+    <>
+      {flash > 0 && <div className="impact-flash pointer-events-none absolute inset-0 z-40 bg-white" />}
+      {splat > 0 && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+          <div className="splat-pop text-[9rem]">{"\u{1F967}"}</div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -31,26 +37,32 @@ function PledgeModal() {
   const open = useGame((s) => s.pledgeOpen);
   const setOpen = useGame((s) => s.setPledgeOpen);
   const buyPies = useGame((s) => s.buyPies);
-  const [count, setCount] = useState(5);
+  const [sel, setSel] = useState(1);
   const [negative, setNegative] = useState(false);
 
   if (!open) return null;
+  const bundle = PRICING.bundles[sel];
   return (
     <div className="absolute inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setOpen(false)}>
       <div className="w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-extrabold text-gray-900">Get more pies</h2>
         <p className="mt-1 text-sm text-gray-600">
-          Every pie is a <b>${PRICING.perPie} pledge to United Way</b>.
+          Pies are <b>${PRICING.perPie} each</b> — bigger packs throw in bonus pies. Every dollar goes to United Way.
         </p>
         <div className="mt-4 flex gap-2">
-          {[1, 5, 10].map((n) => (
+          {PRICING.bundles.map((b, i) => (
             <button
-              key={n}
-              onClick={() => setCount(n)}
-              className={`flex-1 rounded-xl border-2 py-3 text-center font-bold ${count === n ? "border-bank-red bg-red-50 text-bank-red" : "border-gray-200 text-gray-700"}`}
+              key={b.price}
+              onClick={() => setSel(i)}
+              className={`relative flex-1 rounded-xl border-2 py-3 text-center font-bold ${sel === i ? "border-bank-red bg-red-50 text-bank-red" : "border-gray-200 text-gray-700"}`}
             >
-              {n} {"\u{1F967}"}
-              <div className="text-xs font-medium text-gray-500">${n * PRICING.perPie}</div>
+              {b.pies} {"\u{1F967}"}
+              <div className="text-xs font-medium text-gray-500">${b.price}</div>
+              {b.bonus > 0 && (
+                <div className="absolute -top-2 right-1 rounded-full bg-green-600 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                  +{b.bonus} free
+                </div>
+              )}
             </button>
           ))}
         </div>
@@ -62,8 +74,8 @@ function PledgeModal() {
             </span>
           </label>
         )}
-        <button onClick={() => buyPies(count, negative)} className="mt-4 w-full rounded-xl bg-bank-red py-3.5 font-extrabold text-white active:scale-95">
-          Pledge ${count * PRICING.perPie} — grab {count} pie{count > 1 ? "s" : ""}
+        <button onClick={() => buyPies(bundle.pies, bundle.price, negative)} className="mt-4 w-full rounded-xl bg-bank-red py-3.5 font-extrabold text-white active:scale-95">
+          Pledge ${bundle.price} — grab {bundle.pies} pies
         </button>
         <p className="mt-3 text-center text-[11px] leading-snug text-gray-400">
           This app records pledges only. No payment information is ever collected — complete your gift through the campaign&apos;s usual channel.
