@@ -50,11 +50,12 @@ function CameraShake() {
   return null;
 }
 
-// Step-and-repeat sponsor wall: checkered FirstBank reds with the "1" roundel.
+// Step-and-repeat sponsor wall: checkered FirstBank reds with the "1" mark
+// extracted from the actual logo art (including the wordmark overlap).
 function BankBackdrop() {
   const tex = useMemo(() => {
     const t = new THREE.TextureLoader().load(
-      "https://ghddsckqbwrjsjvbjwya.supabase.co/storage/v1/object/public/assets/pie-fundraiser/backdrop-tile.webp"
+      "https://ghddsckqbwrjsjvbjwya.supabase.co/storage/v1/object/public/assets/pie-fundraiser/backdrop-tile-v2.webp"
     );
     t.colorSpace = THREE.SRGBColorSpace;
     t.wrapS = THREE.RepeatWrapping;
