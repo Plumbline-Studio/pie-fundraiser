@@ -25,24 +25,57 @@ let pieId = 0;
 
 function Pie({ pie }: { pie: ActivePie }) {
   const g = useRef<THREE.Group>(null!);
+  const ghost1 = useRef<THREE.Mesh>(null!);
+  const ghost2 = useRef<THREE.Mesh>(null!);
+  const ghost3 = useRef<THREE.Mesh>(null!);
+  const hist = useRef<THREE.Vector3[]>([]);
   useFrame(() => {
     if (!g.current) return;
     g.current.position.copy(pie.pos);
     g.current.rotation.x += pie.spin * 0.016;
+    // motion trail: ghosts trail the pie through recent positions
+    hist.current.unshift(pie.pos.clone());
+    if (hist.current.length > 10) hist.current.pop();
+    [ghost1, ghost2, ghost3].forEach((gr, k) => {
+      const p = hist.current[(k + 1) * 3];
+      if (gr.current) {
+        if (p) {
+          gr.current.visible = true;
+          gr.current.position.copy(p);
+        } else {
+          gr.current.visible = false;
+        }
+      }
+    });
   });
   return (
-    <group ref={g}>
-      {/* tin */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[FEEL.pieRadius, FEEL.pieRadius * 0.82, 0.1, 24]} />
-        <meshStandardMaterial color="#b8b8c0" metalness={0.6} roughness={0.3} />
+    <>
+      <group ref={g}>
+        {/* tin */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[FEEL.pieRadius, FEEL.pieRadius * 0.82, 0.1, 24]} />
+          <meshStandardMaterial color="#b8b8c0" metalness={0.6} roughness={0.3} />
+        </mesh>
+        {/* cream */}
+        <mesh position={[0, 0, 0.07]}>
+          <sphereGeometry args={[FEEL.pieRadius * 0.92, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#fdf6e3" roughness={0.9} />
+        </mesh>
+      </group>
+      {/* motion-blur ghosts */}
+      <mesh ref={ghost1} visible={false}>
+        <sphereGeometry args={[FEEL.pieRadius * 0.55, 10, 8]} />
+        <meshBasicMaterial color="#fdf6e3" transparent opacity={0.28} depthWrite={false} />
       </mesh>
-      {/* cream */}
-      <mesh position={[0, 0, 0.07]}>
-        <sphereGeometry args={[FEEL.pieRadius * 0.92, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#fdf6e3" roughness={0.9} />
+      <mesh ref={ghost2} visible={false}>
+        <sphereGeometry args={[FEEL.pieRadius * 0.42, 10, 8]} />
+        <meshBasicMaterial color="#fdf6e3" transparent opacity={0.16} depthWrite={false} />
       </mesh>
-    </group>
+      <mesh ref={ghost3} visible={false}>
+        <sphereGeometry args={[FEEL.pieRadius * 0.3, 10, 8]} />
+        <meshBasicMaterial color="#fdf6e3" transparent opacity={0.08} depthWrite={false} />
+      </mesh>
+    </>
   );
 }
 
@@ -135,6 +168,7 @@ export default function PieManager() {
           finished.push(pie.id);
           newBursts.push({ id: pie.id, pos: pie.pos.clone(), t: 0 });
           registerHit("body", [lx, ly, lz]);
+          bus.emit("bodyhit", {});
           continue;
         }
       }
