@@ -1,6 +1,7 @@
 "use client";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
 import BillboardCharacter from "./BillboardCharacter";
 import PieManager from "./PieManager";
 import { useGame } from "@/engine/store";
@@ -49,6 +50,27 @@ function CameraShake() {
   return null;
 }
 
+// Step-and-repeat sponsor wall: checkered FirstBank reds with the "1" roundel.
+function BankBackdrop() {
+  const tex = useMemo(() => {
+    const t = new THREE.TextureLoader().load(
+      "https://ghddsckqbwrjsjvbjwya.supabase.co/storage/v1/object/public/assets/pie-fundraiser/backdrop-tile.webp"
+    );
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(14.5, 3); // ~1.5-world-unit squares across the 44x9 wall
+    t.anisotropy = 8;
+    return t;
+  }, []);
+  return (
+    <mesh position={[0, 3.4, -9]}>
+      <planeGeometry args={[44, 9]} />
+      <meshStandardMaterial map={tex} color="#ffffff" />
+    </mesh>
+  );
+}
+
 export default function GameCanvas() {
   const style = useGame((s) => s.style);
   return (
@@ -75,11 +97,7 @@ export default function GameCanvas() {
         <planeGeometry args={[40, 40]} />
         <meshStandardMaterial color="#c9d6e2" />
       </mesh>
-      {/* backdrop banner — wide enough to fill desktop aspect ratios */}
-      <mesh position={[0, 3.4, -9]}>
-        <planeGeometry args={[44, 9]} />
-        <meshStandardMaterial color="#C8102E" />
-      </mesh>
+      <BankBackdrop />
       <BillboardCharacter key={style} variant={style} />
       <PieManager />
     </Canvas>
