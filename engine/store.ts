@@ -53,7 +53,7 @@ interface GameState {
   setStyle: (style: CharStyle) => void;
   setTarget: (t: TargetId) => void;
   setPledgeOpen: (open: boolean) => void;
-  buyPies: (count: number, negative: boolean) => void;
+  buyPies: (pies: number, price: number, negative: boolean) => void;
   consumePie: () => boolean;
   setInFlight: (delta: number) => void;
   registerHit: (zone: "face" | "body", localPos: [number, number, number]) => void;
@@ -83,14 +83,14 @@ export const useGame = create<GameState>((set, get) => ({
   setTarget: (t) => set({ target: t }),
   setPledgeOpen: (open) => set({ pledgeOpen: open }),
 
-  buyPies: (count, negative) =>
+  buyPies: (pies, price, negative) =>
     set((s) => ({
-      piesLeft: s.piesLeft + count,
+      piesLeft: s.piesLeft + pies,
       negative,
-      campaignTotal: s.campaignTotal + count * 5,
+      campaignTotal: s.campaignTotal + price,
       pledgeOpen: false,
       feed: [
-        { id: feedId++, text: negative ? `You armed ${count} negative pie${count > 1 ? "s" : ""} \u{1F608} (still $${count * 5} to United Way)` : `Pledge recorded: $${count * 5} to United Way — ${count} pie${count > 1 ? "s" : ""} added` },
+        { id: feedId++, text: negative ? `You armed ${pies} negative pies \u{1F608} (still $${price} to United Way)` : `Pledge recorded: $${price} to United Way — ${pies} pies added` },
         ...s.feed,
       ].slice(0, 6),
     })),
@@ -152,7 +152,7 @@ export const useGame = create<GameState>((set, get) => ({
       const n = Math.random() < 0.7 ? 1 : Math.floor(2 + Math.random() * 4);
       return {
         standings: { ...s.standings, [tgt.id]: s.standings[tgt.id] + n },
-        campaignTotal: s.campaignTotal + n * 5,
+        campaignTotal: s.campaignTotal + n,
         feed: [{ id: feedId++, text: `${name} in ${region} just pied the ${tgt.label} ${n > 1 ? `×${n}` : ""}` }, ...s.feed].slice(0, 6),
       };
     }),
