@@ -23,7 +23,17 @@ export const FEEL = {
   bodyRadius: 0.5,
 };
 
-export const PRICING = { perPie: 5 }; // demo pricing: $5/pie
+// Pricing: arcade-token model. Cheap per-pie (low pain-of-paying, high play
+// volume) but sold in packs so pledge transactions stay reconciliation-friendly.
+// Bigger packs carry bonus pies. Final call is Teresa/chairperson's.
+export const PRICING = {
+  perPie: 1,
+  bundles: [
+    { pies: 5, price: 5, bonus: 0 },
+    { pies: 12, price: 10, bonus: 2 },
+    { pies: 30, price: 20, bonus: 10 },
+  ],
+};
 
 export const FLAGS = {
   negativePies: true,
