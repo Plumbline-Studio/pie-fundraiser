@@ -1,0 +1,56 @@
+{
+  "character": "teresa",
+  "source": "Gemini-generated 1280x720 @ 24fps clips, white background",
+  "keying": "white removed by border flood-fill; interior white (shirt, cream) preserved",
+  "anchor": "align sprites by foot_anchor, NOT by cell centre",
+  "states": {
+    "taunt": {
+      "label": "Idle / taunt - arms crossed, light cream",
+      "frames": 60,
+      "fps": 24,
+      "loop": true,
+      "cell": { "w": 226, "h": 656 },
+      "foot_anchor": { "x": 102, "y": 647 },
+      "sheet": "/characters/teresa/sheets/taunt.png",
+      "sheet_columns": 10,
+      "sheet_scale": 1.0,
+      "frames_dir": "/characters/teresa/frames/taunt/"
+    },
+    "glance": {
+      "label": "Tier 1 - pie glances off right shoulder, face stays clean",
+      "frames": 60,
+      "fps": 24,
+      "loop": false,
+      "cell": { "w": 816, "h": 659 },
+      "foot_anchor": { "x": 666, "y": 649 },
+      "sheet": "/characters/teresa/sheets/glance.png",
+      "sheet_columns": 10,
+      "sheet_scale": 1.0,
+      "frames_dir": "/characters/teresa/frames/glance/"
+    },
+    "hit2": {
+      "label": "Tier 2 - two pies, direct face hit",
+      "frames": 36,
+      "fps": 24,
+      "loop": false,
+      "cell": { "w": 898, "h": 704 },
+      "foot_anchor": { "x": 446, "y": 695 },
+      "sheet": "/characters/teresa/sheets/hit2.png",
+      "sheet_columns": 6,
+      "sheet_scale": 1.0,
+      "frames_dir": "/characters/teresa/frames/hit2/"
+    },
+    "hit3": {
+      "label": "Tier 3 - three simultaneous pies, full-frame spray",
+      "frames": 72,
+      "fps": 24,
+      "loop": false,
+      "cell": { "w": 1280, "h": 720 },
+      "foot_anchor": { "x": 605, "y": 695 },
+      "sheet": "/characters/teresa/sheets/hit3.png",
+      "sheet_columns": 12,
+      "sheet_scale": 0.5,
+      "frames_dir": "/characters/teresa/frames/hit3/"
+    }
+  }
+}
