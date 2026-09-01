@@ -1,0 +1,129 @@
+{
+  "$comment": "Single source of truth for First Bank brand tokens on the pie-fundraiser project. The game, the PDF generators, and the screen mockups all read from here. Sampled from public assets on fbvirginia.com on 2026-09-01.",
+  "schema": "plumbline.brand/1",
+  "slug": "pie-fundraiser",
+  "brand": {
+    "name": "First Bank",
+    "legal_name": "First Bank",
+    "domain": "fbvirginia.com",
+    "tagline": "There's power in one.",
+    "relationship": "client brand, used with permission pending",
+    "sampled": {
+      "date": "2026-09-01",
+      "source": "https://www.fbvirginia.com/",
+      "method": "logo SVG fill values and site stylesheet color frequency"
+    }
+  },
+  "color": {
+    "red": {
+      "value": "#ED3125",
+      "role": "primary",
+      "usage": "section heads, primary buttons, accent rules, active states",
+      "source": "logo artwork fill + site stylesheet"
+    },
+    "red_dark": {
+      "value": "#C6261C",
+      "role": "primary-pressed",
+      "usage": "hover and pressed states, callout text on light red",
+      "source": "derived, not sampled"
+    },
+    "charcoal": {
+      "value": "#363636",
+      "role": "ink",
+      "usage": "body text, table headers, cover background",
+      "source": "site stylesheet"
+    },
+    "gray": {
+      "value": "#8C8C8C",
+      "role": "muted",
+      "usage": "secondary text, captions, field placeholders",
+      "source": "site stylesheet"
+    },
+    "gray_light": {
+      "value": "#EBEBEB",
+      "role": "rule",
+      "usage": "hairlines, table grid, dividers",
+      "source": "site stylesheet"
+    },
+    "white": {
+      "value": "#FFFFFF",
+      "role": "surface",
+      "usage": "page and card backgrounds"
+    },
+    "sky": {
+      "value": "#DFE9F2",
+      "role": "game-stage",
+      "usage": "arena background behind the character",
+      "source": "game only, NOT a First Bank brand color",
+      "status": "provisional, replace at Marketing's preference"
+    },
+    "field_bg": {
+      "value": "#F7F7F8",
+      "role": "input",
+      "usage": "form field fill"
+    },
+    "confirm": {
+      "value": "#208C5A",
+      "role": "affirmative",
+      "usage": "\"others see this\" badges, verified states",
+      "source": "derived, not a First Bank color"
+    }
+  },
+  "logo": {
+    "reverse": {
+      "file": "brand/logo_white.png",
+      "svg_source": "https://www.fbvirginia.com/Portals/0/FBva_Logo_REVERSE_Tagline_RGB_266.svg",
+      "usage": "on red or charcoal backgrounds",
+      "aspect": 3.4482,
+      "native": { "w": 1400, "h": 406 }
+    },
+    "positive": {
+      "file": "brand/logo_dark.png",
+      "usage": "on white or light backgrounds",
+      "aspect": 3.4482,
+      "native": { "w": 1400, "h": 406 },
+      "status": "derived locally by recoloring the reverse artwork's white fills to charcoal",
+      "action": "request official positive artwork from Marketing and replace"
+    },
+    "clearspace": "keep at least the height of the '1' mark clear on all sides",
+    "never": [
+      "do not stretch or recolor the mark outside the two variants above",
+      "do not place the reverse logo on a light background",
+      "do not typeset the wordmark manually"
+    ]
+  },
+  "type": {
+    "document": {
+      "family": "Helvetica",
+      "note": "PDF generation. Substitute the bank's corporate face if Marketing supplies one."
+    },
+    "interface": {
+      "family": "Poppins",
+      "weights": ["Light", "Regular", "Medium", "Bold"],
+      "note": "Geometric sans, closest available match to the logo wordmark. Mockups only; confirm before production."
+    }
+  },
+  "known_issues": [
+    {
+      "id": "game-red-drift",
+      "where": "pie-fundraiser.vercel.app, Tailwind token `bank-red`",
+      "current": "#C8102E",
+      "should_be": "#ED3125",
+      "severity": "visible",
+      "note": "Game was built before official artwork was pulled. Darker and cooler than the real corporate red.",
+      "status": "open"
+    },
+    {
+      "id": "positive-logo-derived",
+      "where": "brand/logo_dark.png",
+      "note": "No positive-artwork SVG is published publicly; current file is a local recolor.",
+      "status": "open"
+    }
+  ],
+  "consumers": [
+    { "path": "tools/build_fb.py", "what": "briefing PDF palette, cover, page headers" },
+    { "path": "tools/build_mockups.py", "what": "screen mockup palette and logo placement" },
+    { "path": "tailwind.config.ts", "what": "game theme tokens" }
+  ],
+  "usage_position": "These are First Bank's public brand assets, applied so the committee sees the concept in familiar colors. No claim of ownership or endorsement. If Marketing has an internal brand standard, it supersedes this file."
+}
