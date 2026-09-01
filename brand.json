@@ -1,5 +1,5 @@
 {
-  "$comment": "Single source of truth for First Bank brand tokens on the pie-fundraiser project. The game, the PDF generators, and the screen mockups all read from here. Sampled from public assets on fbvirginia.com on 2026-09-01.",
+  "$comment": "Single source of truth for First Bank brand tokens on the pie-fundraiser project. The game, the PDF generators, and the screen mockups all read from here. Brand colors sampled from public assets on fbvirginia.com 2026-09-01; stage colors sampled from the shipped app 2026-09-01.",
   "schema": "plumbline.brand/1",
   "slug": "pie-fundraiser",
   "brand": {
@@ -50,13 +50,6 @@
       "role": "surface",
       "usage": "page and card backgrounds"
     },
-    "sky": {
-      "value": "#DFE9F2",
-      "role": "game-stage",
-      "usage": "arena background behind the character",
-      "source": "game only, NOT a First Bank brand color",
-      "status": "provisional, replace at Marketing's preference"
-    },
     "field_bg": {
       "value": "#F7F7F8",
       "role": "input",
@@ -68,6 +61,20 @@
       "usage": "\"others see this\" badges, verified states",
       "source": "derived, not a First Bank color"
     }
+  },
+  "stage": {
+    "$comment": "The arena background behind the avatar. Deeper reds than the corporate palette so the navy suit and white cream read against it. Sampled from the shipped app, not from fbvirginia.com.",
+    "pattern": "checkerboard, medallion on the dark tiles only",
+    "tile_px": 115,
+    "tiles_across_viewport": 4,
+    "medallion_diameter_ratio": 0.78,
+    "tile_light": { "value": "#8A0012", "usage": "checker light square" },
+    "tile_dark": { "value": "#66000A", "usage": "checker dark square, carries the medallion" },
+    "medallion_disc": { "value": "#A60010", "usage": "the '1' mark disc" },
+    "medallion_ink": { "value": "#B4ADAE", "usage": "medallion ring and numeral — warm light gray, deliberately NOT pure white" },
+    "floor": { "value": "#B0B8BF", "usage": "floor band the avatar stands on" },
+    "horizon_ratio": 0.7,
+    "note": "None of these are First Bank corporate colors. They are a stage treatment derived from the brand, and Marketing may want a say."
   },
   "logo": {
     "reverse": {
@@ -118,11 +125,19 @@
       "where": "brand/logo_dark.png",
       "note": "No positive-artwork SVG is published publicly; current file is a local recolor.",
       "status": "open"
+    },
+    {
+      "id": "mockup-stage-mismatch",
+      "where": "mockups/screen3-game.png",
+      "note": "Mockup originally used a flat #DFE9F2 sky, which was never in the app. Rebuilt against the real checkered stage; the medallion is lifted from an app capture rather than redrawn.",
+      "status": "resolved",
+      "resolved": "2026-09-01"
     }
   ],
   "consumers": [
     { "path": "tools/build_fb.py", "what": "briefing PDF palette, cover, page headers" },
-    { "path": "tools/build_mockups.py", "what": "screen mockup palette and logo placement" },
+    { "path": "tools/build_mockups.py", "what": "screen 1 and 2 mockups" },
+    { "path": "tools/build_screen3.py", "what": "arena mockup — reads the stage block" },
     { "path": "tailwind.config.ts", "what": "game theme tokens" }
   ],
   "usage_position": "These are First Bank's public brand assets, applied so the committee sees the concept in familiar colors. No claim of ownership or endorsement. If Marketing has an internal brand standard, it supersedes this file."
